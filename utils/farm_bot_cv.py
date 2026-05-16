@@ -354,6 +354,15 @@ class FarmBotCV:
                     if not self.plant_seed_v1(game_frame, field_idx):
                         break
                 self.last_check_plant_time = time.time()
+                self.logger.debug("尝试点击空白位置")
+                time.sleep(1)
+                dog_house_center = self.get_dog_house_position(game_frame)
+                if dog_house_center:
+                    target_x = dog_house_center[0]
+                    target_y = dog_house_center[1] - 80  # 点击狗屋上方80像素的空白位置
+                    self.click_at_position(self.convert_to_screen_coordinate((target_x, target_y)))
+                else:
+                    self.click_at_position(self.convert_to_screen_coordinate((200, 270)))
             else:
                 self.logger.info(f"距离上次检查可播种地块时间间隔未达到{self.plant_seed_check_interval}秒，本轮巡检暂不检查，当前间隔时间为：{int(time.time() - self.last_check_plant_time)}秒")
         
@@ -979,68 +988,93 @@ class FarmBotCV:
         return True
 
 
+    def get_dog_house_position(self, game_frame):
+        '''
+        获取狗屋的坐标位置，返回 (x, y) 或 None
+        '''
+        match_result, max_val, threshold = self.cv_match.match_template(game_frame, self.dog_house_frame, threshold=self.dog_house_frame_threshold)
+        if match_result is not None:
+            self.logger.debug(f"检测到【狗屋】, 坐标：{match_result['center']}, 置信度：{max_val:.4f} (阈值：{threshold})")
+            return match_result['center']
+        self.logger.warning(f"未检测到【狗屋】, 最高置信度：{max_val:.4f} (阈值：{threshold})")
+        return None
+
     def plant_seed_v1(self, game_frame, now_field_idx):
         '''
         检查空地并尝试种植种子V1版本
         '''
         # 先定位到狗屋，以狗屋坐标作为基准点，使用相对坐标定位到各块地
-        match_result, max_val, threshold = self.cv_match.match_template(game_frame, self.dog_house_frame, threshold=self.dog_house_frame_threshold)
-        if match_result is not None:
-            self.logger.debug(f"检测到【狗屋】，准备定位空地并种植种子, 最高置信度：{max_val:.4f} (阈值：{threshold})")
-            dog_house_center = match_result['center']
-            dog_house_x, dog_house_y = dog_house_center[0], dog_house_center[1]
-            FIRST_FIELD_OFFSET_X = 25
-            FIRST_FIELD_OFFSET_Y = 82
-            field_offset_map = {
-                                    0:(0, 0), 1:(37,20),2:(73,38),3:(109,57),
-                                    4:(-35,20),5:(1,36),6:(37,56),7:(72,75),
-                                    8:(-71,39),9:(-39,56),10:(1,75),11:(37,93),
-                                    12:(-109,57),13:(-74,73),14:(-39,93),15:(1,111),
-                                    16:(-147,75),17:(-108,94),18:(-74,111),19:(-34,130),
-                                    20:(-181,93),21:(-146,112),22:(-109,128),23:(-75,149),
-            }
+        dog_house_center = self.get_dog_house_position(game_frame)
+        if dog_house_center is None:
+            self.logger.warning(f"未检测到【狗屋】，无法定位空地并种植种子")
+            return False
 
+        dog_house_x, dog_house_y = dog_house_center[0], dog_house_center[1]
+        self.logger.debug(f"【狗屋】坐标为：{dog_house_x, dog_house_y}")
+        FIRST_FIELD_OFFSET_X = 22
+        FIRST_FIELD_OFFSET_Y = 75
+        field_offset_map = {
+            0: (0, 0),          1: (38, 20),        2: (76, 40),        3: (114, 60),
+            4: (-38, 20),       5: (0, 40),         6: (38, 60),        7: (76, 80),
+            8: (-76, 40),       9: (-38, 60),       10: (0, 80),        11: (38, 100),
+            12: (-114, 60),     13: (-76, 80),      14: (-38, 100),     15: (0, 120),
+            16: (-152, 80),     17: (-114, 100),    18: (-76, 120),     19: (-38, 140),
+            20: (-190, 100),    21: (-152, 120),    22: (-114, 140),    23: (-76, 160),
+        }
+
+        first_field_pos_x = dog_house_x + FIRST_FIELD_OFFSET_X
+        first_field_pos_y = dog_house_y + FIRST_FIELD_OFFSET_Y
+        field_offset_x, field_offset_y = field_offset_map[now_field_idx]
+        now_field_pos_x = first_field_pos_x + field_offset_x
+        now_field_pos_y = first_field_pos_y + field_offset_y
+        # 转换为屏幕坐标
+        screen_center = self.convert_to_screen_coordinate((now_field_pos_x, now_field_pos_y))
+        self.click_at_position(screen_center)
+        time.sleep(1)
+
+        # 更新游戏画面
+        game_frame = self.screen_capture.get_window_frame()     # 获取游戏画面
+        if game_frame is None:
+            self.logger.error(f"游戏画面截取失败，请检查游戏是否开启并确保窗口在前台")
+            return True
+
+        # 检查是否为未扩建的地
+        match_result, max_val, threshold = self.cv_match.match_template(game_frame, self.close_x_frame, threshold=self.close_x_frame_threshold)
+        if match_result is not None:
+            self.logger.info(f"检测到第{now_field_idx+1}块地为【未扩建】的地，后续土地不再巡检")
+            x_close_center = match_result['center']
+            screen_center = self.convert_to_screen_coordinate(x_close_center)
+            self.click_at_position(screen_center)
+            return False
+        else:
+            self.logger.debug(f"未检测关闭按钮")
+
+        # 检查是否可以种植种子
+        time.sleep(0.2)
+        # 略微增加延迟，防止第1-4块地的铲除图标还没有从屏幕外回正时就开始检查导致识别不到
+        match_result, max_val, threshold = self.cv_match.match_template(game_frame, self.remove_seed_frame, threshold=self.remove_seed_frame_threshold)
+        if match_result is not None:
+            self.logger.info(f"第{now_field_idx+1}块地为【已种植】的土地")
+            return True
+        else:
+            self.logger.info(f"第{now_field_idx+1}块地为【未种植】的土地,准备播种")
+            # 更新游戏画面，重新获取土地的坐标,防止点击屏幕左侧边缘的土地后，直接点击原来的土地坐标下方位置，导致点到不兼容的4格占地的作物种子
+            game_frame = self.screen_capture.get_window_frame()
+            dog_house_center = self.get_dog_house_position(game_frame)
+            if dog_house_center is None:
+                self.logger.warning(f"未检测到【狗屋】，无法定位空地并种植种子")
+                return False
+            dog_house_x, dog_house_y = dog_house_center[0], dog_house_center[1]
+            self.logger.debug(f"【狗屋】坐标为：{dog_house_x, dog_house_y}")
             first_field_pos_x = dog_house_x + FIRST_FIELD_OFFSET_X
             first_field_pos_y = dog_house_y + FIRST_FIELD_OFFSET_Y
             field_offset_x, field_offset_y = field_offset_map[now_field_idx]
             now_field_pos_x = first_field_pos_x + field_offset_x
             now_field_pos_y = first_field_pos_y + field_offset_y
-            # 转换为屏幕坐标
-            screen_center = self.convert_to_screen_coordinate((now_field_pos_x, now_field_pos_y))
+            # 随机向右偏移5-50像素，防止点击到不兼容的4格作物的种子
+            seed_x_pos = now_field_pos_x + random.randint(5, 50)
+            seed_y_pos = now_field_pos_y + 70
+            screen_center = self.convert_to_screen_coordinate((seed_x_pos,seed_y_pos))
             self.click_at_position(screen_center)
-            time.sleep(1)
-            
-            # 更新游戏画面
-            game_frame = self.screen_capture.get_window_frame()     # 获取游戏画面
-            if game_frame is None:
-                self.logger.error(f"游戏画面截取失败，请检查游戏是否开启并确保窗口在前台")
-                return True
-            
-            # 检查是否为未扩建的地
-            match_result, max_val, threshold = self.cv_match.match_template(game_frame, self.close_x_frame, threshold=self.close_x_frame_threshold)
-            if match_result is not None:
-                self.logger.info(f"检测到第{now_field_idx+1}块地为【未扩建】的地，后续土地不再巡检")
-                x_close_center = match_result['center']
-                screen_center = self.convert_to_screen_coordinate(x_close_center)
-                self.click_at_position(screen_center)
-                return False
-            else:
-                self.logger.debug(f"未检测关闭按钮, 最高置信度：{max_val:.4f} (阈值：{threshold})")
-            
-            # 检查是否可以种植种子
-            match_result, max_val, threshold = self.cv_match.match_template(game_frame, self.remove_seed_frame, threshold=self.remove_seed_frame_threshold)
-            if match_result is not None:
-                self.logger.info(f"第{now_field_idx+1}块地为【已种植】的土地")
-                return True
-            else:
-                self.logger.info(f"第{now_field_idx+1}块地为【未种植】的土地,准备播种")
-                seed_x_pos = now_field_pos_x
-                seed_y_pos = now_field_pos_y + 70
-                screen_center = self.convert_to_screen_coordinate((seed_x_pos,seed_y_pos))
-                self.click_at_position(screen_center)
-                self.logger.info(f"已尝试播种")
-                return True
-
-        else:
-            self.logger.warning(f"未检测到【狗屋】，无法定位空地并种植种子, 最高置信度：{max_val:.4f} (阈值：{threshold})")
-            return False
+            self.logger.info(f"已尝试播种")
+            return True
