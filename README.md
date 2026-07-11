@@ -1,3 +1,35 @@
+
+<div align="right">
+  <details>
+    <summary >🌐 Language</summary>
+    <div>
+      <div align="center">
+        <a href="https://openaitx.github.io/view.html?user=flh155&project=qq-farm-bot-vision&lang=en">English</a>
+        | <a href="https://openaitx.github.io/view.html?user=flh155&project=qq-farm-bot-vision&lang=zh-CN">简体中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=flh155&project=qq-farm-bot-vision&lang=zh-TW">繁體中文</a>
+        | <a href="https://openaitx.github.io/view.html?user=flh155&project=qq-farm-bot-vision&lang=ja">日本語</a>
+        | <a href="https://openaitx.github.io/view.html?user=flh155&project=qq-farm-bot-vision&lang=ko">한국어</a>
+        | <a href="https://openaitx.github.io/view.html?user=flh155&project=qq-farm-bot-vision&lang=hi">हिन्दी</a>
+        | <a href="https://openaitx.github.io/view.html?user=flh155&project=qq-farm-bot-vision&lang=th">ไทย</a>
+        | <a href="https://openaitx.github.io/view.html?user=flh155&project=qq-farm-bot-vision&lang=fr">Français</a>
+        | <a href="https://openaitx.github.io/view.html?user=flh155&project=qq-farm-bot-vision&lang=de">Deutsch</a>
+        | <a href="https://openaitx.github.io/view.html?user=flh155&project=qq-farm-bot-vision&lang=es">Español</a>
+        | <a href="https://openaitx.github.io/view.html?user=flh155&project=qq-farm-bot-vision&lang=it">Italiano</a>
+        | <a href="https://openaitx.github.io/view.html?user=flh155&project=qq-farm-bot-vision&lang=ru">Русский</a>
+        | <a href="https://openaitx.github.io/view.html?user=flh155&project=qq-farm-bot-vision&lang=pt">Português</a>
+        | <a href="https://openaitx.github.io/view.html?user=flh155&project=qq-farm-bot-vision&lang=nl">Nederlands</a>
+        | <a href="https://openaitx.github.io/view.html?user=flh155&project=qq-farm-bot-vision&lang=pl">Polski</a>
+        | <a href="https://openaitx.github.io/view.html?user=flh155&project=qq-farm-bot-vision&lang=ar">العربية</a>
+        | <a href="https://openaitx.github.io/view.html?user=flh155&project=qq-farm-bot-vision&lang=fa">فارسی</a>
+        | <a href="https://openaitx.github.io/view.html?user=flh155&project=qq-farm-bot-vision&lang=tr">Türkçe</a>
+        | <a href="https://openaitx.github.io/view.html?user=flh155&project=qq-farm-bot-vision&lang=vi">Tiếng Việt</a>
+        | <a href="https://openaitx.github.io/view.html?user=flh155&project=qq-farm-bot-vision&lang=id">Bahasa Indonesia</a>
+        | <a href="https://openaitx.github.io/view.html?user=flh155&project=qq-farm-bot-vision&lang=as">অসমীয়া</
+      </div>
+    </div>
+  </details>
+</div>
+
 # qq-farm-bot-vision
 # QQ经典农场机器人（AI视觉版本）
 ## 基于CV视觉匹配的初版已开发完成，Alaph版本已发布，注意：这是早期测试版本，功能不全还在持续开发和优化中，主要是想让部分用户试用一下，协助测试BUG和提意见。
